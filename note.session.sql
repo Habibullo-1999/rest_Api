@@ -1,3 +1,4 @@
+
 -- CREATE TABLE note 
 -- (
 --     id bigserial primary key,
@@ -6,8 +7,12 @@
 --     created timestamp not null default current_timestamp 
 -- );
 
-Insert INTO note VALUES (
-    1,
-    'hello',
-    'hi i am Habib'
-)
+-- Insert INTO note VALUES (
+--     0,
+--     'hello',
+--     'hi i am Habib'
+-- )
+
+UPDATE note Set name='habib', content='hi' WHERE id=2 
+-- DROP TABLE note;
+

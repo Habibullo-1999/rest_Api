@@ -4,19 +4,15 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"strconv"
 
 	"github.com/Habibullo-1999/rest_Api/pkg/note"
+	"github.com/Habibullo-1999/rest_Api/pkg/types"
 	"github.com/gorilla/mux"
 
 )
 
-const (
-	GET = "GET"
-	POST = "POST"
-	PUT = "PUT"
-	DELETE = "DELETE"
-	UPDATE ="UPDATE"
-)
+
 
 type Server struct {
 	mux     *mux.Router
@@ -32,11 +28,15 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) Init() {
-	s.mux.HandleFunc("/notes", s.handleGetNotes).Methods(GET)
+	s.mux.HandleFunc("/notes", s.handleGetNotes).Methods(types.GET)
+	s.mux.HandleFunc("/notes", s.handleSaveNote).Methods(types.POST)
+	s.mux.HandleFunc("/notes", s.handleUpdateNote).Methods(types.PUT)
+	s.mux.HandleFunc("/notes/getById/{id}", s.handleGetNotesById).Methods(types.GET)
 }
 
+//All notes
 func (s *Server) handleGetNotes(w http.ResponseWriter, r *http.Request) {
-	items, err := s.noteSvc.GetNote(r.Context())
+	items, err := s.noteSvc.GetNotes(r.Context())
 	if err != nil {
 		log.Print(err)
 		return
@@ -44,26 +44,66 @@ func (s *Server) handleGetNotes(w http.ResponseWriter, r *http.Request) {
 	resJson(w, items)
 
 }
+//Save notes
+func (s *Server) handleSaveNote(w http.ResponseWriter, r *http.Request) {
+	// item := types.Note{}
 
-func resJson(w http.ResponseWriter, iData interface{}) {
+	note := &types.Note{}
 
-	data, err := json.Marshal(iData)
-
+	err := json.NewDecoder(r.Body).Decode(&note)
 	if err != nil {
 		errWriter(w, http.StatusInternalServerError, err)
 		return
 	}
-	w.Header().Set("Content-Type", "application/json")
-	_, err = w.Write(data)
 
+	noteY, err := s.noteSvc.SaveNote(r.Context(), note)
 	if err != nil {
-
-		log.Print(err)
+		errWriter(w, http.StatusInternalServerError, err)
+		return
 	}
+
+	resJson(w, noteY)
 }
 
-// function for writing an error in responseWriter
-func errWriter(w http.ResponseWriter, httpSts int, err error) {
-	log.Print(err)
-	http.Error(w, http.StatusText(httpSts), httpSts)
+// Update notes by Id
+func (s *Server) handleUpdateNote(w http.ResponseWriter, r *http.Request) {
+
+	note := &types.Note{}
+
+	err := json.NewDecoder(r.Body).Decode(&note)
+	if err != nil {
+		errWriter(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	noteY, err := s.noteSvc.UpdateNote(r.Context(), note)
+	if err != nil {
+		errWriter(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	resJson(w, noteY)
 }
+// Get by id notes
+func (s *Server) handleGetNotesById(w http.ResponseWriter, r *http.Request) {
+
+	id, ok := mux.Vars(r)["id"]
+	if !ok {
+		log.Print("Status bad Request")
+		return
+	}
+	noteId, err := strconv.ParseInt(id, 10, 64)
+	if err != nil {
+		errWriter(w, http.StatusBadRequest, err)
+		return
+	}
+	
+	item, err := s.noteSvc.GetById(r.Context(), noteId)
+	if err != nil {
+		errWriter(w, http.StatusBadRequest, err)
+		return
+	}
+	resJson(w, item)
+}
+
+

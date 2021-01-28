@@ -62,6 +62,7 @@ func execute(host string, port string, dsn string) (err error) {
 	}
 
 	return container.Invoke(func (s *http.Server) error {
+		log.Print("Сервер запушен на"+host+":"+port)
 		return s.ListenAndServe()
 	})
 
