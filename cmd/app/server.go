@@ -32,6 +32,7 @@ func (s *Server) Init() {
 	s.mux.HandleFunc("/notes", s.handleSaveNote).Methods(types.POST)
 	s.mux.HandleFunc("/notes", s.handleUpdateNote).Methods(types.PUT)
 	s.mux.HandleFunc("/notes/getById/{id}", s.handleGetNotesById).Methods(types.GET)
+	s.mux.HandleFunc("/notes/delete/{id}", s.handleDeleteNote).Methods(types.DELETE)
 }
 
 //All notes
@@ -86,10 +87,10 @@ func (s *Server) handleUpdateNote(w http.ResponseWriter, r *http.Request) {
 }
 // Get by id notes
 func (s *Server) handleGetNotesById(w http.ResponseWriter, r *http.Request) {
-
+	var err error
 	id, ok := mux.Vars(r)["id"]
 	if !ok {
-		log.Print("Status bad Request")
+		errWriter(w, http.StatusBadRequest, err)
 		return
 	}
 	noteId, err := strconv.ParseInt(id, 10, 64)
@@ -106,4 +107,26 @@ func (s *Server) handleGetNotesById(w http.ResponseWriter, r *http.Request) {
 	resJson(w, item)
 }
 
+//delete note by id
+func (s *Server) handleDeleteNote(w http.ResponseWriter, r *http.Request)  {
+	var err error
+	id, ok := mux.Vars(r)["id"]
+	if !ok {
+		errWriter(w, http.StatusBadRequest, err)
+		return
+	}
+	noteId, err := strconv.ParseInt(id, 10, 64)
+	if err != nil {
+		errWriter(w, http.StatusBadRequest, err)
+		return
+	}
+
+	err = s.noteSvc.Delete(r.Context(), noteId)
+	if err != nil {
+		errWriter(w, http.StatusNotFound, types.ErrNotFound)
+		return
+	}
+	
+	resJson(w, map[string]interface{}{"status": "ok"})
+}
 

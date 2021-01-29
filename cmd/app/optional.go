@@ -20,7 +20,6 @@ func resJson(w http.ResponseWriter, iData interface{}) {
 	_, err = w.Write(data)
 
 	if err != nil {
-
 		log.Print(err)
 	}
 }

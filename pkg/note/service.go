@@ -2,7 +2,6 @@ package note
 
 import (
 	"context"
-	"errors"
 	"log"
 
 	"github.com/Habibullo-1999/rest_Api/pkg/types"
@@ -17,6 +16,7 @@ type Service struct {
 func NewService(pool *pgxpool.Pool) *Service {
 	return &Service{pool: pool}
 }
+
 //Get All Notes
 func (s *Service) GetNotes(ctx context.Context) (items []*types.Note, err error) {
 
@@ -41,6 +41,7 @@ func (s *Service) GetNotes(ctx context.Context) (items []*types.Note, err error)
 	return items, nil
 
 }
+
 //Get By ID
 func (s *Service) GetById(ctx context.Context, id int64) (item *types.Note, err error) {
 
@@ -59,7 +60,7 @@ func (s *Service) GetById(ctx context.Context, id int64) (item *types.Note, err 
 	return items, nil
 }
 
-//Save 
+//Save
 func (s *Service) SaveNote(ctx context.Context, itemOld *types.Note) (newNote *types.Note, err error) {
 	item := &types.Note{}
 	if itemOld.ID == 0 {
@@ -71,29 +72,46 @@ func (s *Service) SaveNote(ctx context.Context, itemOld *types.Note) (newNote *t
 			&item.Created)
 	} else {
 		log.Print(err)
-		return nil, errors.New("internal error")
+		return nil, types.ErrInternal
 	}
 	if err != nil {
 		log.Print(err)
-		return nil, errors.New("internal error")
+		return nil, types.ErrInternal
 	}
 	return item, nil
 }
-//Update 
+
+//Update
 func (s *Service) UpdateNote(ctx context.Context, itemOld *types.Note) (newNote *types.Note, err error) {
 	item := &types.Note{}
 
-		sqlQuery := `UPDATE note Set name=$2, content=$3 WHERE id=$1 returning * `
-		err = s.pool.QueryRow(ctx, sqlQuery, itemOld.ID, itemOld.Name, itemOld.Content).Scan(
-			&item.ID,
-			&item.Name,
-			&item.Content,
-			&item.Created)
+	sqlQuery := `UPDATE note Set name=$2, content=$3 WHERE id=$1 returning * `
+	err = s.pool.QueryRow(ctx, sqlQuery, itemOld.ID, itemOld.Name, itemOld.Content).Scan(
+		&item.ID,
+		&item.Name,
+		&item.Content,
+		&item.Created)
 	if err != nil {
 		log.Print(err)
-		return nil, errors.New("internal error")
-	}		
+		return nil, types.ErrInternal
+	}
 
-	
 	return item, nil
+}
+
+//delete note
+func (s *Service) Delete(ctx context.Context, id int64) error {
+	sqlQuery := `Select id From note Where id=$1`
+	err := s.pool.QueryRow(ctx, sqlQuery, id).Scan(&id)
+	if err != nil {
+		log.Print(err)
+		return types.ErrNotFound
+	}
+
+	_, err = s.pool.Exec(ctx, `DELETE From note Where id=$1 `, &id)
+	if err != nil {
+		log.Print(err)
+		return types.ErrInternal
+	}
+	return nil
 }

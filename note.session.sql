@@ -13,6 +13,8 @@
 --     'hi i am Habib'
 -- )
 
-UPDATE note Set name='habib', content='hi' WHERE id=2 
+-- UPDATE note Set name='habib', content='hi' WHERE id=2 
 -- DROP TABLE note;
+
+-- DELETE From note WHere id=3
 
